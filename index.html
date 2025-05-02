@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EB Shop - Loja Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #6b46c1 0%, #805ad5 100%);
+        }
+        .receipt-preview {
+            max-width: 300px;
+            max-height: 300px;
+            border: 2px dashed #ccc;
+            margin-top: 10px;
+        }
+        .admin-panel {
+            display: none;
+        }
+        .user-orders {
+            display: none;
+        }
+        .tickets-panel {
+            display: none;
+        }
+        .discord-login {
+            background-color: #5865F2;
+        }
+        .discord-login:hover {
+            background-color: #4752C4;
+        }
+        .item-card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        .loading-spinner {
+            border-top-color: #6366F1;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .order-image {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .status-open {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        .status-closed {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+        .sidebar {
+            width: 250px;
+            transition: all 0.3s;
+        }
+        .sidebar-item {
+            transition: all 0.2s;
+        }
+        .sidebar-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .main-content {
+            margin-left: 250px;
+            transition: all 0.3s;
+        }
+        .sidebar-collapsed .sidebar {
+            width: 70px;
+        }
+        .sidebar-collapsed .sidebar-item span {
+            display: none;
+        }
+        .sidebar-collapsed .main-content {
+            margin-left: 70px;
+        }
+        .sidebar-collapsed .sidebar-item {
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Sidebar -->
+    <div class="fixed inset-y-0 left-0 bg-purple-900 text-white shadow-lg sidebar z-40" id="sidebar">
+        <div class="flex flex-col h-full">
+            <div class="p-4 flex items-center justify-between border-b border-purple-800">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-store text-2xl"></i>
+                    <span class="text-xl font-bold">EB Shop</span>
+                </div>
+                <button id="toggleSidebar" class="text-white hover:text-purple-300">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto py-4">
+                <nav class="space-y-1 px-2">
+                    <a href="#" class="flex items-center px-4 py-3 text-sm font-medium rounded-md sidebar-item" id="shopBtn">
+                        <i class="fas fa-shopping-cart mr-3"></i>
+                        <span>Loja</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-sm font-medium rounded-md sidebar-item" id="myOrdersBtn">
+                        <i class="fas fa-clipboard-list mr-3"></i>
+                        <span>Meus Pedidos</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-sm font-medium rounded-md sidebar-item" id="ticketBtn">
+                        <i class="fas fa-ticket-alt mr-3"></i>
+                        <span>Tickets</span>
+                    </a>
+                    <a href="#" class="flex items-center px-4 py-3 text-sm font-medium rounded-md sidebar-item" id="adminBtn">
+                        <i class="fas fa-lock mr-3"></i>
+                        <span>Admin</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="p-4 border-t border-purple-800">
+                <a href="https://discord.gg/" target="_blank" class="flex items-center justify-center w-full discord-login px-4 py-2 rounded-md text-white font-medium">
+                    <i class="fab fa-discord mr-2"></i>
+                    <span>Discord</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content min-h-screen" id="mainContent">
+        <!-- Admin Login Modal -->
+        <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold">Acesso Admin</h3>
+                    <button id="closeAdminModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Chave de Acesso</label>
+                    <input type="password" id="adminKey" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Digite a chave">
+                </div>
+                <button id="submitAdminKey" class="w-full gradient-bg hover:bg-purple-700 text-white py-2 rounded-md transition duration-200">
+                    Acessar
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="container mx-auto px-4 py-8">
+            <!-- Shop Items -->
+            <div id="shopPanel">
+                <div class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-purple-900">Nossos Produtos</h1>
+                    <div class="relative">
+                        <input type="text" id="searchItems" class="pl-10 pr-4 py-2 border rounded-full focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Buscar produtos...">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6" id="itemsContainer">
+                    <!-- Items will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- User Orders Panel -->
+            <div id="userOrdersPanel" class="user-orders">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-2xl font-bold text-purple-900">Meus Pedidos</h2>
+                    <button id="refreshOrdersBtn" class="flex items-center text-purple-600 hover:text-purple-800">
+                        <i class="fas fa-sync-alt mr-2"></i> Atualizar
+                    </button>
+                </div>
+                
+                <div id="userOrdersList" class="space-y-4">
+                    <!-- Orders will be listed here -->
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <i class="fas fa-clipboard-list text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-700">Você ainda não fez nenhum pedido</h3>
+                        <p class="text-gray-500 mt-2">Compre algum produto para ver seus pedidos aqui</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tickets Panel -->
+            <div id="ticketsPanel" class="tickets-panel">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-2xl font-bold text-purple-900">Meus Tickets</h2>
+                    <button id="newTicketBtn" class="gradient-bg hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Novo Ticket
+                    </button>
+                </div>
+                
+                <div id="ticketsList" class="space-y-4">
+                    <!-- Tickets will be listed here -->
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <i class="fas fa-ticket-alt text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-700">Você ainda não abriu nenhum ticket</h3>
+                        <p class="text-gray-500 mt-2">Clique em "Novo Ticket" para solicitar ajuda</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Panel -->
+            <div id="adminPanel" class="admin-panel">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-2xl font-bold text-purple-900">Painel Administrativo</h2>
+                    <div class="flex space-x-2">
+                        <button id="logoutAdminBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md">
+                            Sair
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Items Management -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-box-open mr-2 text-purple-600"></i>
+                            Gerenciar Produtos
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                                <input type="text" id="itemName" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Preço (R$)</label>
+                                <input type="number" id="itemPrice" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                                <textarea id="itemDescription" rows="3" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent"></textarea>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="addItemBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-md transition duration-200">
+                                    Adicionar
+                                </button>
+                                <button id="removeItemBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-md transition duration-200">
+                                    Remover
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Orders Management -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-clipboard-check mr-2 text-purple-600"></i>
+                            Pedidos Recentes
+                        </h3>
+                        <div id="ordersList" class="space-y-3 max-h-96 overflow-y-auto">
+                            <!-- Orders will be listed here -->
+                            <div class="text-center py-4 text-gray-500">
+                                <i class="fas fa-clipboard-list text-2xl mb-2"></i>
+                                <p>Nenhum pedido recente</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tickets Management -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i class="fas fa-ticket-alt mr-2 text-purple-600"></i>
+                            Tickets Recentes
+                        </h3>
+                        <div id="adminTicketsList" class="space-y-3 max-h-96 overflow-y-auto">
+                            <!-- Tickets will be listed here -->
+                            <div class="text-center py-4 text-gray-500">
+                                <i class="fas fa-ticket-alt text-2xl mb-2"></i>
+                                <p>Nenhum ticket recente</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Modal -->
+    <div id="purchaseModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Finalizar Compra</h3>
+                <button id="closePurchaseModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4 bg-purple-50 p-4 rounded-md">
+                <p class="font-medium">Item: <span id="modalItemName" class="text-purple-800"></span></p>
+                <p class="font-medium">Preço: <span class="text-purple-800">R$</span><span id="modalItemPrice" class="text-purple-800"></span></p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="customerEmail" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Seu email">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nick do Discord</label>
+                    <input type="text" id="customerDiscord" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Seu nick no Discord">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cupom (opcional)</label>
+                    <input type="text" id="customerCoupon" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Código do cupom">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Comprovante PIX</label>
+                    <div class="flex items-center justify-center w-full">
+                        <label for="receiptUpload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+                                <p class="text-sm text-gray-500">Clique para enviar ou arraste o arquivo</p>
+                            </div>
+                            <input id="receiptUpload" type="file" class="hidden" accept="image/*">
+                        </label>
+                    </div>
+                    <div id="receiptPreview" class="receipt-preview hidden mt-2 rounded-md overflow-hidden"></div>
+                    <p class="text-xs text-gray-500 mt-1">Envie uma foto do comprovante mostrando o valor e o nome "Miguel Mendes Matos"</p>
+                </div>
+                <div class="mt-4 bg-gray-50 p-3 rounded-md">
+                    <p class="text-sm font-medium text-gray-700 mb-1">Dados para Pagamento PIX</p>
+                    <p class="text-sm text-gray-600">Chave PIX: <span class="font-medium">003.613.723.53</span></p>
+                    <p class="text-sm text-gray-600">Nome: <span class="font-medium">Miguel Mendes Matos</span></p>
+                </div>
+                <button id="confirmPurchaseBtn" class="w-full gradient-bg hover:bg-purple-700 text-white py-3 rounded-md font-medium flex items-center justify-center transition duration-200">
+                    <span id="purchaseBtnText">Confirmar Compra</span>
+                    <div id="purchaseSpinner" class="ml-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full hidden loading-spinner"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="orderDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Detalhes do Pedido</h3>
+                <button id="closeOrderDetailModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p class="font-medium">Item: <span id="detailItemName" class="text-purple-800"></span></p>
+                    <p class="font-medium">Preço Original: <span class="text-purple-800">R$</span><span id="detailOriginalPrice" class="text-purple-800"></span></p>
+                    <p class="font-medium">Preço Final: <span class="text-purple-800">R$</span><span id="detailFinalPrice" class="text-purple-800"></span></p>
+                    <p class="font-medium">Status: <span id="detailStatus" class="status-badge"></span></p>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p class="font-medium mb-2">Cliente:</p>
+                    <p>Email: <span id="detailEmail" class="text-gray-700"></span></p>
+                    <p>Discord: <span id="detailDiscord" class="text-gray-700"></span></p>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p class="font-medium mb-2">Comprovante:</p>
+                    <div id="detailReceipt" class="mt-2 flex justify-center">
+                        <!-- Receipt image will be shown here -->
+                    </div>
+                </div>
+                
+                <div id="adminOrderActions" class="flex space-x-2 hidden">
+                    <button id="approveOrderBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-md transition duration-200">
+                        Aprovar
+                    </button>
+                    <button id="rejectOrderBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-md transition duration-200">
+                        Rejeitar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Ticket Modal -->
+    <div id="newTicketModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Novo Ticket</h3>
+                <button id="closeNewTicketModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Assunto</label>
+                    <input type="text" id="ticketSubject" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Assunto do ticket">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
+                    <select id="ticketReason" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+                        <option value="problema">Problema com a compra</option>
+                        <option value="reembolso">Pedido de reembolso</option>
+                        <option value="duvida">Dúvida sobre produtos</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mensagem</label>
+                    <textarea id="ticketMessage" rows="4" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Descreva seu problema ou dúvida"></textarea>
+                </div>
+                <button id="submitTicketBtn" class="w-full gradient-bg hover:bg-purple-700 text-white py-2 rounded-md font-medium transition duration-200">
+                    Enviar Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Detail Modal -->
+    <div id="ticketDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Detalhes do Ticket</h3>
+                <button id="closeTicketDetailModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p class="font-medium">Assunto: <span id="ticketDetailSubject" class="text-purple-800"></span></p>
+                    <p class="font-medium">Status: <span id="ticketDetailStatus" class="status-badge"></span></p>
+                    <p class="font-medium">Data: <span id="ticketDetailDate" class="text-gray-700"></span></p>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p class="font-medium mb-2">Mensagem:</p>
+                    <p id="ticketDetailMessage" class="text-gray-700"></p>
+                </div>
+                
+                <div id="ticketResponses" class="space-y-3 max-h-60 overflow-y-auto">
+                    <!-- Responses will be shown here -->
+                </div>
+                
+                <div id="adminTicketActions" class="flex space-x-2 hidden">
+                    <button id="closeTicketBtn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-md transition duration-200">
+                        Fechar Ticket
+                    </button>
+                    <button id="respondTicketBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md transition duration-200">
+                        Responder
+                    </button>
+                </div>
+                
+                <div id="ticketResponseForm" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Resposta</label>
+                    <textarea id="ticketResponseMessage" rows="3" class="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:border-transparent" placeholder="Digite sua resposta"></textarea>
+                    <button id="submitTicketResponseBtn" class="w-full mt-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded-md transition duration-200">
+                        Enviar Resposta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md text-center">
+            <div class="mb-4 text-green-500">
+                <i class="fas fa-check-circle text-5xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2" id="successTitle">Sucesso!</h3>
+            <p class="mb-4 text-gray-600" id="successMessage"></p>
+            <button id="closeSuccessModal" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md transition duration-200">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md text-center">
+            <div class="mb-4 text-red-500">
+                <i class="fas fa-exclamation-circle text-5xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2" id="errorTitle">Ocorreu um erro</h3>
+            <p class="mb-4 text-gray-600" id="errorMessage"></p>
+            <button id="closeErrorModal" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-md transition duration-200">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Data management with localStorage
+        function loadData() {
+            const savedItems = localStorage.getItem('ebShopItems');
+            const savedCoupons = localStorage.getItem('ebShopCoupons');
+            const savedOrders = localStorage.getItem('ebShopOrders');
+            const savedTickets = localStorage.getItem('ebShopTickets');
+            
+            return {
+                items: savedItems ? JSON.parse(savedItems) : [
+                    { id: "1", name: "Item EB 1", price: 10.00, description: "Descrição do item EB 1" },
+                    { id: "2", name: "Item EB 2", price: 15.50, description: "Descrição do item EB 2" },
+                    { id: "3", name: "Item EB 3", price: 20.00, description: "Descrição do item EB 3" }
+                ],
+                coupons: savedCoupons ? JSON.parse(savedCoupons) : [
+                    { code: "EB10", discount: 10 },
+                    { code: "EB20", discount: 20 }
+                ],
+                orders: savedOrders ? JSON.parse(savedOrders) : [],
+                tickets: savedTickets ? JSON.parse(savedTickets) : []
+            };
+        }
+
+        function saveData(data) {
+            localStorage.setItem('ebShopItems', JSON.stringify(data.items));
+            localStorage.setItem('ebShopCoupons', JSON.stringify(data.coupons));
+            localStorage.setItem('ebShopOrders', JSON.stringify(data.orders));
+            localStorage.setItem('ebShopTickets', JSON.stringify(data.tickets));
+        }
+
+        // Initialize data
+        let data = loadData();
+        const ADMIN_KEY = "AIKU";
+        const OWNER_EMAIL = "mesndesmiguel591@gmail.com";
+        const PIX_KEY = "003.613.723.53";
+        const OWNER_NAME = "Miguel Mendes Matos";
+
+        // DOM Elements
+        const itemsContainer = document.getElementById('itemsContainer');
+        const ordersList = document.getElementById('ordersList');
+        const userOrdersList = document.getElementById('userOrdersList');
+        const ticketsList = document.getElementById('ticketsList');
+        const adminTicketsList = document.getElementById('adminTicketsList');
+        const adminModal = document.getElementById('adminModal');
+        const adminPanel = document.getElementById('adminPanel');
+        const userOrdersPanel = document.getElementById('userOrdersPanel');
+        const ticketsPanel = document.getElementById('ticketsPanel');
+        const shopPanel = document.getElementById('shopPanel');
+        const purchaseModal = document.getElementById('purchaseModal');
+        const orderDetailModal = document.getElementById('orderDetailModal');
+        const newTicketModal = document.getElementById('newTicketModal');
+        const ticketDetailModal = document.getElementById('ticketDetailModal');
+        const successModal = document.getElementById('successModal');
+        const errorModal = document.getElementById('errorModal');
+        const receiptPreview = document.getElementById('receiptPreview');
+        const receiptUpload = document.getElementById('receiptUpload');
+        const purchaseSpinner = document.getElementById('purchaseSpinner');
+        const purchaseBtnText = document.getElementById('purchaseBtnText');
+        const successTitle = document.getElementById('successTitle');
+        const successMessage = document.getElementById('successMessage');
+        const errorTitle = document.getElementById('errorTitle');
+        const errorMessage = document.getElementById('errorMessage');
+        const adminOrderActions = document.getElementById('adminOrderActions');
+        const adminTicketActions = document.getElementById('adminTicketActions');
+        const ticketResponseForm = document.getElementById('ticketResponseForm');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const toggleSidebar = document.getElementById('toggleSidebar');
+
+        // Buttons
+        const shopBtn = document.getElementById('shopBtn');
+        const myOrdersBtn = document.getElementById('myOrdersBtn');
+        const ticketBtn = document.getElementById('ticketBtn');
+        const adminBtn = document.getElementById('adminBtn');
+        const closeAdminModal = document.getElementById('closeAdminModal');
+        const submitAdminKey = document.getElementById('submitAdminKey');
+        const logoutAdminBtn = document.getElementById('logoutAdminBtn');
+        const closePurchaseModal = document.getElementById('closePurchaseModal');
+        const confirmPurchaseBtn = document.getElementById('confirmPurchaseBtn');
+        const closeOrderDetailModal = document.getElementById('closeOrderDetailModal');
+        const newTicketBtn = document.getElementById('newTicketBtn');
+        const closeNewTicketModal = document.getElementById('closeNewTicketModal');
+        const submitTicketBtn = document.getElementById('submitTicketBtn');
+        const closeTicketDetailModal = document.getElementById('closeTicketDetailModal');
+        const closeSuccessModal = document.getElementById('closeSuccessModal');
+        const closeErrorModal = document.getElementById('closeErrorModal');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const removeItemBtn = document.getElementById('removeItemBtn');
+        const approveOrderBtn = document.getElementById('approveOrderBtn');
+        const rejectOrderBtn = document.getElementById('rejectOrderBtn');
+        const closeTicketBtn = document.getElementById('closeTicketBtn');
+        const respondTicketBtn = document.getElementById('respondTicketBtn');
+        const submitTicketResponseBtn = document.getElementById('submitTicketResponseBtn');
+        const refreshOrdersBtn = document.getElementById('refreshOrdersBtn');
+
+        // Form inputs
+        const itemName = document.getElementById('itemName');
+        const itemPrice = document.getElementById('itemPrice');
+        const itemDescription = document.getElementById('itemDescription');
+        const customerEmail = document.getElementById('customerEmail');
+        const customerDiscord = document.getElementById('customerDiscord');
+        const customerCoupon = document.getElementById('customerCoupon');
+        const modalItemName = document.getElementById('modalItemName');
+        const modalItemPrice = document.getElementById('modalItemPrice');
+        const ticketSubject = document.getElementById('ticketSubject');
+        const ticketReason = document.getElementById('ticketReason');
+        const ticketMessage = document.getElementById('ticketMessage');
+        const ticketResponseMessage = document.getElementById('ticketResponseMessage');
+        const detailItemName = document.getElementById('detailItemName');
+        const detailOriginalPrice = document.getElementById('detailOriginalPrice');
+        const detailFinalPrice = document.getElementById('detailFinalPrice');
+        const detailStatus = document.getElementById('detailStatus');
+        const detailEmail = document.getElementById('detailEmail');
+        const detailDiscord = document.getElementById('detailDiscord');
+        const detailReceipt = document.getElementById('detailReceipt');
+        const ticketDetailSubject = document.getElementById('ticketDetailSubject');
+        const ticketDetailStatus = document.getElementById('ticketDetailStatus');
+        const ticketDetailDate = document.getElementById('ticketDetailDate');
+        const ticketDetailMessage = document.getElementById('ticketDetailMessage');
+        const ticketResponses = document.getElementById('ticketResponses');
+        const searchItems = document.getElementById('searchItems');
+
+        // Current selected item/order/ticket
+        let currentItem = null;
+        let currentOrder = null;
+        let currentTicket = null;
+        let currentUserEmail = localStorage.getItem('userEmail') || null;
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            renderItems();
+            renderOrders();
+            renderUserOrders();
+            renderTickets();
+            renderAdminTickets();
+            
+            // Check if admin is logged in
+            if (localStorage.getItem('adminLoggedIn') === 'true') {
+                adminPanel.style.display = 'block';
+                adminBtn.classList.add('bg-purple-800');
+            }
+            
+            // Set up sidebar toggle
+            toggleSidebar.addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-collapsed');
+            });
+            
+            // Set up search functionality
+            searchItems.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredItems = data.items.filter(item => 
+                    item.name.toLowerCase().includes(searchTerm) || 
+                    item.description.toLowerCase().includes(searchTerm)
+                );
+                renderItems(filteredItems);
+            });
+        });
+
+        // Event Listeners
+        shopBtn.addEventListener('click', () => {
+            shopPanel.style.display = 'block';
+            userOrdersPanel.style.display = 'none';
+            ticketsPanel.style.display = 'none';
+            adminPanel.style.display = 'none';
+            
+            // Update active state
+            shopBtn.classList.add('bg-purple-800');
+            myOrdersBtn.classList.remove('bg-purple-800');
+            ticketBtn.classList.remove('bg-purple-800');
+            adminBtn.classList.remove('bg-purple-800');
+        });
+
+        myOrdersBtn.addEventListener('click', () => {
+            if (!currentUserEmail) {
+                showError('Email necessário', 'Por favor, faça uma compra primeiro para visualizar seus pedidos.');
+                return;
+            }
+            
+            shopPanel.style.display = 'none';
+            userOrdersPanel.style.display = 'block';
+            ticketsPanel.style.display = 'none';
+            adminPanel.style.display = 'none';
+            
+            // Update active state
+            shopBtn.classList.remove('bg-purple-800');
+            myOrdersBtn.classList.add('bg-purple-800');
+            ticketBtn.classList.remove('bg-purple-800');
+            adminBtn.classList.remove('bg-purple-800');
+            
+            renderUserOrders();
+        });
+
+        ticketBtn.addEventListener('click', () => {
+            if (!currentUserEmail) {
+                showError('Email necessário', 'Por favor, faça uma compra primeiro para abrir tickets.');
+                return;
+            }
+            
+            shopPanel.style.display = 'none';
+            userOrdersPanel.style.display = 'none';
+            ticketsPanel.style.display = 'block';
+            adminPanel.style.display = 'none';
+            
+            // Update active state
+            shopBtn.classList.remove('bg-purple-800');
+            myOrdersBtn.classList.remove('bg-purple-800');
+            ticketBtn.classList.add('bg-purple-800');
+            adminBtn.classList.remove('bg-purple-800');
+            
+            renderTickets();
+        });
+
+        adminBtn.addEventListener('click', () => {
+            if (localStorage.getItem('adminLoggedIn') === 'true') {
+                shopPanel.style.display = 'none';
+                userOrdersPanel.style.display = 'none';
+                ticketsPanel.style.display = 'none';
+                adminPanel.style.display = 'block';
+                
+                // Update active state
+                shopBtn.classList.remove('bg-purple-800');
+                myOrdersBtn.classList.remove('bg-purple-800');
+                ticketBtn.classList.remove('bg-purple-800');
+                adminBtn.classList.add('bg-purple-800');
+            } else {
+                adminModal.classList.remove('hidden');
+            }
+        });
+
+        closeAdminModal.addEventListener('click', () => {
+            adminModal.classList.add('hidden');
+        });
+
+        submitAdminKey.addEventListener('click', () => {
+            const key = document.getElementById('adminKey').value;
+            if (key === ADMIN_KEY) {
+                localStorage.setItem('adminLoggedIn', 'true');
+                adminPanel.style.display = 'block';
+                shopPanel.style.display = 'none';
+                userOrdersPanel.style.display = 'none';
+                ticketsPanel.style.display = 'none';
+                adminModal.classList.add('hidden');
+                adminBtn.classList.add('bg-purple-800');
+                
+                showSuccess('Acesso concedido!', 'Você agora tem acesso ao painel de controle.');
+            } else {
+                showError('Acesso negado', 'Chave de administrador incorreta.');
+            }
+        });
+
+        logoutAdminBtn.addEventListener('click', () => {
+            localStorage.removeItem('adminLoggedIn');
+            adminPanel.style.display = 'none';
+            shopPanel.style.display = 'block';
+            adminBtn.classList.remove('bg-purple-800');
+            shopBtn.classList.add('bg-purple-800');
+            
+            showSuccess('Sessão encerrada', 'Você saiu do painel administrativo.');
+        });
+
+        closePurchaseModal.addEventListener('click', () => {
+            purchaseModal.classList.add('hidden');
+        });
+
+        confirmPurchaseBtn.addEventListener('click', () => {
+            const email = customerEmail.value;
+            const discord = customerDiscord.value;
+            const coupon = customerCoupon.value;
+            const receiptFile = receiptUpload.files[0];
+            
+            if (!email || !discord || !receiptFile) {
+                showError('Campos obrigatórios', 'Por favor, preencha todos os campos e envie o comprovante.');
+                return;
+            }
+            
+            // Validate receipt
+            if (!validateReceipt(receiptFile)) {
+                showError('Comprovante inválido', 'O comprovante deve mostrar o valor e o nome "Miguel Mendes Matos".');
+                return;
+            }
+            
+            // Apply coupon if valid
+            let finalPrice = currentItem.price;
+            let appliedCoupon = null;
+            
+            if (coupon) {
+                const foundCoupon = data.coupons.find(c => c.code === coupon);
+                if (foundCoupon) {
+                    appliedCoupon = foundCoupon.code;
+                    finalPrice = finalPrice * (1 - foundCoupon.discount / 100);
+                }
+            }
+            
+            // Show loading state
+            purchaseSpinner.classList.remove('hidden');
+            purchaseBtnText.textContent = "Processando...";
+            
+            // Read the receipt file as data URL
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const receiptData = event.target.result;
+                
+                setTimeout(() => {
+                    const order = {
+                        id: Date.now().toString(),
+                        itemId: currentItem.id,
+                        itemName: currentItem.name,
+                        originalPrice: currentItem.price,
+                        finalPrice: finalPrice.toFixed(2),
+                        coupon: appliedCoupon,
+                        email,
+                        discord,
+                        receipt: receiptData,
+                        date: new Date().toISOString(),
+                        status: 'pending'
+                    };
+                    
+                    data.orders.push(order);
+                    currentUserEmail = email;
+                    localStorage.setItem('userEmail', email);
+                    saveData(data);
+                    
+                    renderOrders();
+                    renderUserOrders();
+                    
+                    // Simulate sending emails
+                    simulateSendCustomerEmail(email, currentItem.name, finalPrice.toFixed(2));
+                    simulateSendOwnerNotification(email, currentItem.name, finalPrice.toFixed(2));
+                    
+                    // Hide loading state
+                    purchaseSpinner.classList.add('hidden');
+                    purchaseBtnText.textContent = "Confirmar Compra";
+                    
+                    // Close modal and show success
+                    purchaseModal.classList.add('hidden');
+                    showSuccess('Compra realizada!', 'Você receberá um email de confirmação. Sua entrega pode levar até 72 horas.');
+                    
+                    // Clear form
+                    customerEmail.value = '';
+                    customerDiscord.value = '';
+                    customerCoupon.value = '';
+                    receiptUpload.value = '';
+                    receiptPreview.classList.add('hidden');
+                    receiptPreview.innerHTML = '';
+                }, 2000);
+            };
+            reader.readAsDataURL(receiptFile);
+        });
+
+        closeOrderDetailModal.addEventListener('click', () => {
+            orderDetailModal.classList.add('hidden');
+        });
+
+        closeNewTicketModal.addEventListener('click', () => {
+            newTicketModal.classList.add('hidden');
+        });
+
+        closeTicketDetailModal.addEventListener('click', () => {
+            ticketDetailModal.classList.add('hidden');
+        });
+
+        closeSuccessModal.addEventListener('click', () => {
+            successModal.classList.add('hidden');
+        });
+
+        closeErrorModal.addEventListener('click', () => {
+            errorModal.classList.add('hidden');
+        });
+
+        newTicketBtn.addEventListener('click', () => {
+            newTicketModal.classList.remove('hidden');
+        });
+
+        submitTicketBtn.addEventListener('click', () => {
+            const subject = ticketSubject.value;
+            const reason = ticketReason.value;
+            const message = ticketMessage.value;
+            
+            if (!subject || !message) {
+                showError('Campos obrigatórios', 'Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            const ticket = {
+                id: Date.now().toString(),
+                subject,
+                reason,
+                message,
+                email: currentUserEmail,
+                date: new Date().toISOString(),
+/*************  ✨ Windsurf Command ⭐  *************/
+        /**
+         * Shows the details of a given order in the order detail modal, 
+         * including the item name, original and final price, customer email and Discord, 
+         * and the status. If the order is pending and the user is an admin, 
+         * also shows the admin actions.
+         * @param {Object} order - The order to show details for.
+         */
+/*******  35a338c6-197f-49d0-a7e3-661852e59b52  *******/                status: 'open',
+                responses: []
+            };
+            
+            data.tickets.push(ticket);
+            saveData(data);
+            
+            newTicketModal.classList.add('hidden');
+            renderTickets();
+            renderAdminTickets();
+            
+            showSuccess('Ticket enviado', 'Seu ticket foi criado com sucesso! Entraremos em contato em breve.');
+            
+            // Clear form
+            ticketSubject.value = '';
+            ticketMessage.value = '';
+        });
+
+        addItemBtn.addEventListener('click', () => {
+            const name = itemName.value;
+            const price = parseFloat(itemPrice.value);
+            const description = itemDescription.value;
+            
+            if (!name || isNaN(price) || !description) {
+                showError('Campos obrigatórios', 'Por favor, preencha todos os campos.');
+                return;
+            }
+            
+            const newItem = {
+                id: Date.now().toString(),
+                name,
+                price,
+                description
+            };
+            
+            data.items.push(newItem);
+            saveData(data);
+            renderItems();
+            
+            // Clear form
+            itemName.value = '';
+            itemPrice.value = '';
+            itemDescription.value = '';
+            
+            showSuccess('Item adicionado', 'O novo item foi adicionado à loja com sucesso!');
+        });
+
+        removeItemBtn.addEventListener('click', () => {
+            const name = itemName.value;
+            
+            if (!name) {
+                showError('Nome necessário', 'Por favor, insira o nome do item que deseja remover.');
+                return;
+            }
+            
+            const index = data.items.findIndex(item => item.name === name);
+            if (index === -1) {
+                showError('Item não encontrado', 'Não foi encontrado um item com este nome.');
+                return;
+            }
+            
+            data.items.splice(index, 1);
+            saveData(data);
+            renderItems();
+            
+            // Clear form
+            itemName.value = '';
+            itemPrice.value = '';
+            itemDescription.value = '';
+            
+            showSuccess('Item removido', 'O item foi removido com sucesso!');
+        });
+
+        approveOrderBtn.addEventListener('click', () => {
+            if (!currentOrder) return;
+            
+            currentOrder.status = 'approved';
+            saveData(data);
+            renderOrders();
+            renderUserOrders();
+            
+            // Simulate sending approval email
+            simulateSendApprovalEmail(currentOrder.email, currentOrder.itemName);
+            
+            orderDetailModal.classList.add('hidden');
+            showSuccess('Pedido aprovado', 'O pedido foi aprovado e o cliente foi notificado.');
+        });
+
+        rejectOrderBtn.addEventListener('click', () => {
+            if (!currentOrder) return;
+            
+            currentOrder.status = 'rejected';
+            saveData(data);
+            renderOrders();
+            renderUserOrders();
+            
+            // Simulate sending rejection email
+            simulateSendRejectionEmail(currentOrder.email, currentOrder.itemName);
+            
+            orderDetailModal.classList.add('hidden');
+            showSuccess('Pedido rejeitado', 'O pedido foi rejeitado e o cliente foi notificado.');
+        });
+
+        closeTicketBtn.addEventListener('click', () => {
+            if (!currentTicket) return;
+            
+            currentTicket.status = 'closed';
+            saveData(data);
+            renderTickets();
+            renderAdminTickets();
+            
+            ticketDetailModal.classList.add('hidden');
+            showSuccess('Ticket fechado', 'O ticket foi marcado como fechado.');
+        });
+
+        respondTicketBtn.addEventListener('click', () => {
+            ticketResponseForm.classList.toggle('hidden');
+        });
+
+        submitTicketResponseBtn.addEventListener('click', () => {
+            const response = ticketResponseMessage.value;
+            
+            if (!response) {
+                showError('Resposta vazia', 'Por favor, digite uma resposta para o ticket.');
+                return;
+            }
+            
+            if (!currentTicket) return;
+            
+            const adminResponse = {
+                id: Date.now().toString(),
+                message: response,
+                date: new Date().toISOString(),
+                isAdmin: true
+            };
+            
+            currentTicket.responses.push(adminResponse);
+            saveData(data);
+            
+            ticketResponseMessage.value = '';
+            ticketResponseForm.classList.add('hidden');
+            renderTicketDetails(currentTicket);
+            renderTickets();
+            renderAdminTickets();
+            
+            showSuccess('Resposta enviada', 'Sua resposta foi enviada com sucesso.');
+        });
+
+        refreshOrdersBtn.addEventListener('click', () => {
+            renderUserOrders();
+            showSuccess('Pedidos atualizados', 'Sua lista de pedidos foi atualizada.');
+        });
+
+        receiptUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    receiptPreview.innerHTML = `<img src="${event.target.result}" alt="Comprovante" class="w-full h-full object-contain">`;
+                    receiptPreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Helper Functions
+        function renderItems(itemsToRender = null) {
+            const items = itemsToRender || data.items;
+            itemsContainer.innerHTML = '';
+            
+            if (items.length === 0) {
+                itemsContainer.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-700">Nenhum produto encontrado</h3>
+                        <p class="text-gray-500">Tente ajustar sua busca ou adicione novos produtos</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            items.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'bg-white rounded-lg shadow-md overflow-hidden item-card';
+                itemElement.innerHTML = `
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-2 text-purple-900">${item.name}</h3>
+                        <p class="text-gray-600 mb-4">${item.description}</p>
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-purple-800">R$ ${item.price.toFixed(2)}</span>
+                            <button class="gradient-bg hover:bg-purple-700 text-white px-4 py-2 rounded-md buy-btn" data-id="${item.id}">
+                                Comprar
+                            </button>
+                        </div>
+                    </div>
+                `;
+                itemsContainer.appendChild(itemElement);
+            });
+            
+            // Add event listeners to buy buttons
+            document.querySelectorAll('.buy-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemId = e.target.getAttribute('data-id');
+                    currentItem = data.items.find(item => item.id === itemId);
+                    
+                    if (currentItem) {
+                        modalItemName.textContent = currentItem.name;
+                        modalItemPrice.textContent = currentItem.price.toFixed(2);
+                        purchaseModal.classList.remove('hidden');
+                        
+                        // Pre-fill email if available
+                        if (currentUserEmail) {
+                            customerEmail.value = currentUserEmail;
+                        }
+                    }
+                });
+            });
+        }
+
+        function renderOrders() {
+            ordersList.innerHTML = '';
+            
+            if (data.orders.length === 0) {
+                ordersList.innerHTML = `
+                    <div class="text-center py-4 text-gray-500">
+                        <i class="fas fa-clipboard-list text-2xl mb-2"></i>
+                        <p>Nenhum pedido recente</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Show only last 5 orders
+            const recentOrders = [...data.orders].reverse().slice(0, 5);
+            
+            recentOrders.forEach(order => {
+                const orderElement = document.createElement('div');
+                orderElement.className = 'bg-gray-100 p-3 rounded-md cursor-pointer hover:bg-gray-200';
+                orderElement.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-medium">${order.itemName}</p>
+                            <p class="text-sm text-gray-600">${order.discord}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-purple-800">R$ ${order.finalPrice}</p>
+                            <p class="text-xs text-gray-500">${formatDate(order.date)}</p>
+                            <span class="status-badge ${
+                                order.status === 'pending' ? 'status-pending' : 
+                                order.status === 'approved' ? 'status-approved' : 
+                                'status-rejected'
+                            }">${
+                                order.status === 'pending' ? 'Pendente' : 
+                                order.status === 'approved' ? 'Aprovado' : 
+                                'Rejeitado'
+                            }</span>
+                        </div>
+                    </div>
+                    ${order.coupon ? `<p class="text-xs mt-1">Cupom: ${order.coupon}</p>` : ''}
+                `;
+                
+                orderElement.addEventListener('click', () => {
+                    showOrderDetails(order);
+                });
+                
+                ordersList.appendChild(orderElement);
+            });
+        }
+
+        function renderUserOrders() {
+            if (!currentUserEmail) {
+                userOrdersList.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <i class="fas fa-clipboard-list text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-700">Você ainda não fez nenhum pedido</h3>
+                        <p class="text-gray-500 mt-2">Compre algum produto para ver seus pedidos aqui</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const userOrders = data.orders.filter(order => order.email === currentUserEmail);
+            
+            if (userOrders.length === 0) {
+                userOrdersList.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <i class="fas fa-clipboard-list text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-700">Você ainda não fez nenhum pedido</h3>
+                        <p class="text-gray-500 mt-2">Compre algum produto para ver seus pedidos aqui</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            userOrdersList.innerHTML = '';
+            
+            // Sort by date (newest first)
+            const sortedOrders = [...userOrders].reverse();
+            
+            sortedOrders.forEach(order => {
+                const orderElement = document.createElement('div');
+                orderElement.className = 'bg-white rounded-lg shadow-md p-4 cursor-pointer hover:bg-gray-50 mb-3';
+                orderElement.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-medium">${order.itemName}</p>
+                            <p class="text-sm text-gray-500">${formatDate(order.date)}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-purple-800">R$ ${order.finalPrice}</p>
+                            <span class="status-badge ${
+                                order.status === 'pending' ? 'status-pending' : 
+                                order.status === 'approved' ? 'status-approved' : 
+                                'status-rejected'
+                            }">${
+                                order.status === 'pending' ? 'Pendente' : 
+                                order.status === 'approved' ? 'Aprovado' : 
+                                'Rejeitado'
+                            }</span>
+                        </div>
+                    </div>
+                `;
+                
+                orderElement.addEventListener('click', () => {
+                    showOrderDetails(order);
+                });
+                
+                userOrdersList.appendChild(orderElement);
+            });
+        }
+
+        function renderTickets() {
+            if (!currentUserEmail) return;
+            
+            ticketsList.innerHTML = '';
+            
+            const userTickets = data.tickets.filter(ticket => ticket.email === currentUserEmail);
+            
+            if (userTickets.length === 0) {
+                ticketsList.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                        <i class="fas fa-ticket-alt text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-medium text-gray-700">Você ainda não abriu nenhum ticket</h3>
+                        <p class="text-gray-500 mt-2">Clique em "Novo Ticket" para solicitar ajuda</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by date (newest first)
+            const sortedTickets = [...userTickets].reverse();
+            
+            sortedTickets.forEach(ticket => {
+                const ticketElement = document.createElement('div');
+                ticketElement.className = 'bg-white rounded-lg shadow-md p-4 cursor-pointer hover:bg-gray-50 mb-3';
+                ticketElement.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-medium">${ticket.subject}</p>
+                            <p class="text-sm text-gray-500">${formatDate(ticket.date)}</p>
+                        </div>
+                        <div>
+                            <span class="status-badge ${
+                                ticket.status === 'open' ? 'status-open' : 'status-closed'
+                            }">${
+                                ticket.status === 'open' ? 'Aberto' : 'Fechado'
+                            }</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2 truncate">${ticket.message}</p>
+                `;
+                
+                ticketElement.addEventListener('click', () => {
+                    showTicketDetails(ticket);
+                });
+                
+                ticketsList.appendChild(ticketElement);
+            });
+        }
+
+        function renderAdminTickets() {
+            adminTicketsList.innerHTML = '';
+            
+            if (data.tickets.length === 0) {
+                adminTicketsList.innerHTML = `
+                    <div class="text-center py-4 text-gray-500">
+                        <i class="fas fa-ticket-alt text-2xl mb-2"></i>
+                        <p>Nenhum ticket recente</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by date (newest first)
+            const sortedTickets = [...data.tickets].reverse().slice(0, 5);
+            
+            sortedTickets.forEach(ticket => {
+                const ticketElement = document.createElement('div');
+                ticketElement.className = 'bg-gray-100 p-3 rounded-md cursor-pointer hover:bg-gray-200';
+                ticketElement.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-medium">${ticket.subject}</p>
+                            <p class="text-sm text-gray-600">${ticket.email}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500">${formatDate(ticket.date)}</p>
+                            <span class="status-badge ${
+                                ticket.status === 'open' ? 'status-open' : 'status-closed'
+                            }">${
+                                ticket.status === 'open' ? 'Aberto' : 'Fechado'
+                            }</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2 truncate">${ticket.message}</p>
+                `;
+                
+                ticketElement.addEventListener('click', () => {
+                    showTicketDetails(ticket);
+                });
+                
+                adminTicketsList.appendChild(ticketElement);
+            });
+        }
+
+        function showOrderDetails(order) {
+            currentOrder = order;
+            
+            detailItemName.textContent = order.itemName;
+            detailOriginalPrice.textContent = order.originalPrice.toFixed(2);
+            detailFinalPrice.textContent = order.finalPrice;
+            detailEmail.textContent = order.email;
+            detailDiscord.textContent = order.discord;
+            
+            // Set status with appropriate color
+            detailStatus.textContent = 
+                order.status === 'pending' ? 'Pendente' : 
+                order.status === 'approved' ? 'Aprovado' : 'Rejeitado';
+            
+            detailStatus.className = 'status-badge ' + 
+                (order.status === 'pending' ? 'status-pending' : 
+                 order.status === 'approved' ? 'status-approved' : 
+                 'status-rejected');
+            
+            // Show receipt
+            detailReceipt.innerHTML = `<img src="${order.receipt}" alt="Comprovante" class="order-image rounded-md">`;
+            
+            // Show admin actions if admin is logged in and order is pending
+            if (localStorage.getItem('adminLoggedIn') === 'true' && order.status === 'pending') {
+                adminOrderActions.classList.remove('hidden');
+            } else {
+                adminOrderActions.classList.add('hidden');
+            }
+            
+            orderDetailModal.classList.remove('hidden');
+        }
+
+        function showTicketDetails(ticket) {
+            currentTicket = ticket;
+            
+            ticketDetailSubject.textContent = ticket.subject;
+            ticketDetailMessage.textContent = ticket.message;
+            ticketDetailDate.textContent = formatDate(ticket.date);
+            
+            // Set status
+            ticketDetailStatus.textContent = ticket.status === 'open' ? 'Aberto' : 'Fechado';
+            ticketDetailStatus.className = 'status-badge ' + (ticket.status === 'open' ? 'status-open' : 'status-closed');
+            
+            // Show responses
+            ticketResponses.innerHTML = '';
+            if (ticket.responses.length > 0) {
+                ticket.responses.forEach(response => {
+                    const responseElement = document.createElement('div');
+                    responseElement.className = 'bg-gray-50 p-3 rounded-md';
+                    responseElement.innerHTML = `
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-sm font-medium">${response.isAdmin ? 'Administrador' : 'Cliente'}</span>
+                            <span class="text-xs text-gray-500">${formatDate(response.date)}</span>
+                        </div>
+                        <p class="text-sm">${response.message}</p>
+                    `;
+                    ticketResponses.appendChild(responseElement);
+                });
+            } else {
+                ticketResponses.innerHTML = '<p class="text-sm text-gray-500 text-center py-2">Nenhuma resposta ainda</p>';
+            }
+            
+            // Show admin actions if admin is logged in and ticket is open
+            if (localStorage.getItem('adminLoggedIn') === 'true' && ticket.status === 'open') {
+                adminTicketActions.classList.remove('hidden');
+            } else {
+                adminTicketActions.classList.add('hidden');
+            }
+            
+            // Hide response form by default
+            ticketResponseForm.classList.add('hidden');
+            
+            ticketDetailModal.classList.remove('hidden');
+        }
+
+        function showSuccess(title, message) {
+            successTitle.textContent = title;
+            successMessage.textContent = message;
+            successModal.classList.remove('hidden');
+        }
+
+        function showError(title, message) {
+            errorTitle.textContent = title;
+            errorMessage.textContent = message;
+            errorModal.classList.remove('hidden');
+        }
+
+        function validateReceipt(file) {
+            // In a real app, you would use image recognition or manual verification
+            // For this demo, we'll just check if it's an image file
+            return file.type.startsWith('image/');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function simulateSendCustomerEmail(email, itemName, price) {
+            // This is just a simulation - in a real app you would use a backend service
+            console.log(`[Simulação] Email enviado para ${email}:`);
+            console.log(`Assunto: Confirmação de compra - ${itemName}`);
+            console.log(`Corpo: Obrigado pela sua compra do item ${itemName} no valor de R$ ${price}. Sua entrega pode chegar em até 72 horas. Caso contrário, pode abrir ticket no nosso grupo pedindo o seu dinheiro de volta.`);
+        }
+
+        function simulateSendOwnerNotification(email, itemName, price) {
+            // This is just a simulation - in a real app you would use a backend service
+            console.log(`[Simulação] Notificação enviada para ${OWNER_EMAIL}:`);
+            console.log(`Assunto: Nova compra - ${itemName}`);
+            console.log(`Corpo: Cliente ${email} comprou ${itemName} por R$ ${price}. Verifique o comprovante PIX.`);
+        }
+
+        function simulateSendApprovalEmail(email, itemName) {
+            // This is just a simulation - in a real app you would use a backend service
+            console.log(`[Simulação] Email de aprovação enviado para ${email}:`);
+            console.log(`Assunto: Seu pedido foi aprovado - ${itemName}`);
+            console.log(`Corpo: Seu pedido do item ${itemName} foi aprovado e será entregue em breve.`);
+        }
+
+        function simulateSendRejectionEmail(email, itemName) {
+            // This is just a simulation - in a real app you would use a backend service
+            console.log(`[Simulação] Email de rejeição enviado para ${email}:`);
+            console.log(`Assunto: Seu pedido foi rejeitado - ${itemName}`);
+            console.log(`Corpo: Infelizmente seu pedido do item ${itemName} foi rejeitado. Entre em contato conosco para mais informações.`);
+        }
+    </script>
+</body>
+</html>
